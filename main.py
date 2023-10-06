@@ -56,8 +56,6 @@ if uploadedFile:
         # We filter the df by years first.
         df = df.loc[((df['dateRange']=='Past 1 Year') | (df['dateRange']=='Past 3 Years') | (df['dateRange']=='Past 5 Years'))]
 
-        df.drop(columns = ['nodeType', ])
-
         df.rename(columns = {'y':'Latitude', 'x':'Longitude', 'nodeName':'Node', 'iso':'ISO', 'lmpAverage': 'LMP Average', 'mindaylmp': 'LMP min day', 'avgmaxlmp': 'LMP max average', 'lmpspread': 'LMP Spread', 'lmpAveragePeak': 'LMP average peak', 'lmpMax': 'LMP Max', 'lmpAverageOffPeak': 'LMP average offpeak', 'lmpMin': 'LMP Min', 'lmpTotalNegativeValues': 'LMP negative days', 'lmpWeightedSolar': 'LMP Solar', 'lmpWeightedWind': 'LMP Wind', 'nodeZoneDifferential': 'Node zone differential', 'averageDayAheadRealtimeSpread': 'Average day real time spread', 'averageTopBottom4SpreadDailyLMP': 'LMP average top-bottom daily spread', 'mclAverage': 'MCP Average', 'mclMax': 'MCP Max', 'mclMin': 'MCP Min', 'mccAverage': 'MCC Average', 'Storage arbitrage potential': 'storageArbitragePotential', 'priceType': 'Price type', 'dateRange': 'Period From'})
 
         df[['Latitude', 'Longitude']] = df[['Latitude', 'Longitude']].astype(float)
