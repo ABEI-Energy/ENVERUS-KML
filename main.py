@@ -1,29 +1,13 @@
 import datetime as dt
 import io
 import locale as lc
-from zipfile import ZipFile
 import pandas as pd
 import streamlit as st
 import streamlit_toggle as tog
 from docx.shared import Cm
-import PyPDF2 
-
+import mapper as mp 
 import coordinates as cd
-import numToLet as ntl
-import post as ps
-import readers as rd
-import writers as wt
-from aereas import *
 
-
-def duplicateDoc(filemodelo):
-    from docx import Document  # for accessing the document by python-docx
-
-    global edited_doc1
-    # access Word document"MODELOS\Modelo anteproyecto AFL.docx"
-    my_file = Document(filemodelo)
-
-    return my_file
 
 #Set the language for datetime
 lc.setlocale(lc.LC_ALL,'es_ES.UTF-8')
@@ -36,100 +20,131 @@ def normalize2(string):
 
 st.set_page_config(layout="wide")
 
-def resize_image(image, max_width):
-    width, height = image.size
-    if width > max_width:
-        ratio = max_width / width
-        new_width = max_width
-        new_height = int(height * ratio)
-        return image.resize((new_width, new_height))
-    return image
-
-
-def insert_image_in_cell(doc, dic, picFile):
-    if rootLogos not in dic['logoC']:
-        dic['logoC'] = rootLogos + "/" + dic['logoC']
-    if rootLogos not in dic['logoH']:
-        dic['logoH'] = rootLogos + "/" + dic['logoH']
-    import io
-
-    from PIL import Image
-
-    for table in doc.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                if "logoC" in cell.text:
-                    imagen = Image.open(dic['logoC'])
-
-                    logoC = io.BytesIO()
-                    imagen.save(logoC, format = 'PNG')
-                    logoC.seek(0)
-                    cell.text = ""
-                    cell_paragraph = cell.paragraphs[0]
-                    run = cell_paragraph.add_run()
-                    run.add_picture(logoC, width = Cm(7.0), height = Cm(4.5))
-
-                if ("tomaAerea" in cell.text) and (dic['tomaAerea'] != "pass"):
-                    imagen = Image.open(picFile)
-                    size = imagen.size
-                    imWidth = float(size[0])
-                    imHeight = float(size[1])                    
-                    if imWidth > 16.55:
-                        imHeight = imHeight*16.55/imWidth
-                        imWidth = 16.55
-                    logoC = io.BytesIO()
-                    imagen.save(logoC, format = 'PNG')
-                    logoC.seek(0)
-                    cell.text = ""
-                    cell_paragraph = cell.paragraphs[0]
-                    run = cell_paragraph.add_run()
-                    run.add_picture(logoC, width = Cm(imWidth), height = Cm(imHeight))
-
-                if ("figuraStruct" in cell.text) and (dic['figuraStruct'] != "pass"):
-                    imagen = Image.open(dic['figuraStruct'])
-                    logoC = io.BytesIO()
-                    imagen.save(logoC, format = 'PNG')
-                    logoC.seek(0)
-                    cell.text = ""
-                    cell_paragraph = cell.paragraphs[0]
-                    run = cell_paragraph.add_run()
-                    run.add_picture(logoC, width = Cm(6.95), height = Cm(5.1))          
-
-                if ("figuraCronograma" in cell.text) and (dic['figuraCronograma'] != "pass"):
-                    imagen = Image.open(dic['figuraCronograma'])
-                    logoC = io.BytesIO()
-                    imagen.save(logoC, format = 'PNG')
-                    logoC.seek(0)
-                    cell.text = ""
-                    cell_paragraph = cell.paragraphs[0]
-                    run = cell_paragraph.add_run()
-                    if int(dic['mesesProjDur']) == 10:
-                        run.add_picture(logoC, width = Cm(15.2), height = Cm(8.5))   
-                    
-                    else:
-                        run.add_picture(logoC, width = Cm(15.2), height = Cm(14.3))   
-                    
-    for section in doc.sections:
-        for table in section.header.tables:
-            for row in table.rows:
-                for cell in row.cells:
-                    if "logoH" in cell.text:
-                        imagen = Image.open(dic['logoC'])
-                        logoC = io.BytesIO()
-                        imagen.save(logoC, format = 'PNG')
-                        logoC.seek(0)
-                        cell.text = ""
-                        cell_paragraph = cell.paragraphs[0]
-                        run = cell_paragraph.add_run()
-                        run.add_picture(logoC, width = Cm(2.75), height = Cm(1.75))          
-
-    flagPicWriter = 1
-    return flagPicWriter 
 
 
 """
-# Documentos Acceso y Conexión España
+# ENVERUS kml maker
 """
+
+
+# Time to read the documents 
+
+st.divider()
+
+coly, colx = st.columns(2)
+with colx:
+    uploadedFile = st.file_uploader("Drag here the csv from Enverus. Make sure the file is not filtered.", accept_multiple_files = False)
+
+with coly:
+    st.caption("Csv example of unaltered file")
+    with open("SAMPLEFILES/ENV_CSV_FILE_EXAMPLE.csv", "rb") as fp:
+        btn = st.download_button(
+            label="Download csv file type",
+            data=fp,
+            file_name="ENV_CSV_FILE_EXAMPLE.csv",
+            mime='text/csv',
+        )
+
+st.cache
+
+if uploadedFile:
+
+    if uploadedFile.name.endswith('csv'):
+
+        df = pd.read_csv(uploadedFile)
+
+        # We filter the df by years first.
+        df = df.loc[((df['dateRange']=='Past 1 Year') | (df['dateRange']=='Past 3 Years') | (df['dateRange']=='Past 5 Years'))]
+
+        df.drop(columns = ['nodeType', ])
+
+        df.rename(columns = {'y':'Latitude', 'x':'Longitude', 'nodeName':'Node', 'iso':'ISO', 'lmpAverage': 'LMP Average', 'mindaylmp': 'LMP min day', 'avgmaxlmp': 'LMP max average', 'lmpspread': 'LMP Spread', 'lmpAveragePeak': 'LMP average peak', 'lmpMax': 'LMP Max', 'lmpAverageOffPeak': 'LMP average offpeak', 'lmpMin': 'LMP Min', 'lmpTotalNegativeValues': 'LMP negative days', 'lmpWeightedSolar': 'LMP Solar', 'lmpWeightedWind': 'LMP Wind', 'nodeZoneDifferential': 'Node zone differential', 'averageDayAheadRealtimeSpread': 'Average day real time spread', 'averageTopBottom4SpreadDailyLMP': 'LMP average top-bottom daily spread', 'mclAverage': 'MCP Average', 'mclMax': 'MCP Max', 'mclMin': 'MCP Min', 'mccAverage': 'MCC Average', 'Storage arbitrage potential': 'storageArbitragePotential', 'priceType': 'Price type', 'dateRange': 'Period From'})
+
+        df[['Latitude', 'Longitude']] = df[['Latitude', 'Longitude']].astype(float)
+
+        df_key_BESS = df[['Node', 'ISO', 'Period From', 'Latitude', 'Longitude', 'LMP Spread', 'LMP negative days', 'LMP Average', ]]
+
+        df1 =  df.loc[(df['Period From']=='Past 1 Year')]
+        df3 =  df.loc[(df['Period From']=='Past 3 Years')]
+        df5 =  df.loc[(df['Period From']=='Past 5 Years')]
+
+
+
+        pass
+    
+
+    
+
+
+
+
+pass
+
+'''
+@st.cache
+def convert_df(df):
+    # IMPORTANT: Cache the conversion to prevent computation on every rerun
+    return df.to_csv().encode('utf-8')
+
+csv = convert_df(my_large_df)
+'''
+
+
+
+'''
+for uploaded_file in uploadedFiles:
+    if uploaded_file.name.endswith("xlsx"):
+        if "ProjectSheet" in pd.ExcelFile(uploaded_file).sheet_names:
+            st.markdown('<span style="color:green">&#10004;</span> PVDesign excel', unsafe_allow_html=True)
+            pvFile = uploaded_file
+            aux_dic = rd.excelReaderPVD(uploaded_file, mainDic, rootEstructuras, dfModulos, user)
+            mainDic.update(aux_dic)
+            mainDic.update(lineasAereas(mainDic))
+            global flagCable
+            flagCable = 1
+
+        elif (("Vallado") or ("C. V. (Formato Word)")) in pd.ExcelFile(uploaded_file).sheet_names:
+            st.markdown('<span style="color:green">&#10004;</span> Documentos delineantes ', unsafe_allow_html=True)
+            df_parcelasVallado = DataFrame()
+            df_parcelasLinea = DataFrame()
+            df_centroTrafo = DataFrame()
+            df_accesos = DataFrame()
+            df_parcelasVallado, df_parcelasLinea, df_centroTrafo, df_accesos = rd.excelReaderCoordenadas(uploaded_file, mainDic)
+
+        elif (("Planta")) in pd.ExcelFile(uploaded_file).sheet_names:
+            
+            df_parcelasPlanta = DataFrame()
+            df_parcelasTramo = DataFrame()
+            df_parcelasPlanta, df_parcelasTramo = rd.excelReaderParcelas(uploaded_file, mainDic)
+            
+    elif uploaded_file.name.endswith("png"):
+        st.markdown('<span style="color:green">&#10004;</span> Fotografía planta', unsafe_allow_html=True)
+
+        picFile = uploaded_file
+        mainDic['tomaAerea'] = picFile.name
+
+    elif uploaded_file.name.endswith("pdf"):
+
+        word = rd.reader(uploaded_file,0)
+
+        if "PVsyst" in word:
+            PVsyst_file = uploaded_file
+            st.markdown('<span style="color:green">&#10004;</span> PVsyst', unsafe_allow_html=True)
+
+        else:
+            planos_file = uploaded_file
+            st.markdown('<span style="color:green">&#10004;</span> Planos pdf', unsafe_allow_html=True)
+
+        # Datasheets se cogen según los datos
+
+
+    
+
+
+
+
+
+
 
 user = st.text_input("Nombre redactor del documento")
 if user:
@@ -384,73 +399,6 @@ if proyectoTipo == "Fotovoltáico":
 
 
 
-# Time to read the documents 
-
-st.divider()
-
-coly, colx = st.columns(2)
-with colx:
-    uploadedFiles = st.file_uploader("Arrastra los excels, la imagen de la planta (formato png), set de planos y PVsyst report (pdf)", accept_multiple_files = True)
-
-with coly:
-    st.caption("Ejemplo de archivos")
-    with open("SAMPLEFILES/Ejemplo archivos PSFV XXXX.zip", "rb") as fp:
-        btn = st.download_button(
-            label="Descarga archivos de ejemplo",
-            data=fp,
-            file_name="Ejemplo archivos PSFV XXXX.zip",
-            mime="application/zip"
-        )
-
-
-
-for uploaded_file in uploadedFiles:
-    if uploaded_file.name.endswith("xlsx"):
-        if "ProjectSheet" in pd.ExcelFile(uploaded_file).sheet_names:
-            st.markdown('<span style="color:green">&#10004;</span> PVDesign excel', unsafe_allow_html=True)
-            pvFile = uploaded_file
-            aux_dic = rd.excelReaderPVD(uploaded_file, mainDic, rootEstructuras, dfModulos, user)
-            mainDic.update(aux_dic)
-            mainDic.update(lineasAereas(mainDic))
-            global flagCable
-            flagCable = 1
-
-        elif (("Vallado") or ("C. V. (Formato Word)")) in pd.ExcelFile(uploaded_file).sheet_names:
-            st.markdown('<span style="color:green">&#10004;</span> Documentos delineantes ', unsafe_allow_html=True)
-            df_parcelasVallado = DataFrame()
-            df_parcelasLinea = DataFrame()
-            df_centroTrafo = DataFrame()
-            df_accesos = DataFrame()
-            df_parcelasVallado, df_parcelasLinea, df_centroTrafo, df_accesos = rd.excelReaderCoordenadas(uploaded_file, mainDic)
-
-        elif (("Planta")) in pd.ExcelFile(uploaded_file).sheet_names:
-            
-            df_parcelasPlanta = DataFrame()
-            df_parcelasTramo = DataFrame()
-            df_parcelasPlanta, df_parcelasTramo = rd.excelReaderParcelas(uploaded_file, mainDic)
-            
-    elif uploaded_file.name.endswith("png"):
-        st.markdown('<span style="color:green">&#10004;</span> Fotografía planta', unsafe_allow_html=True)
-
-        picFile = uploaded_file
-        mainDic['tomaAerea'] = picFile.name
-
-    elif uploaded_file.name.endswith("pdf"):
-
-        word = rd.reader(uploaded_file,0)
-
-        if "PVsyst" in word:
-            PVsyst_file = uploaded_file
-            st.markdown('<span style="color:green">&#10004;</span> PVsyst', unsafe_allow_html=True)
-
-        else:
-            planos_file = uploaded_file
-            st.markdown('<span style="color:green">&#10004;</span> Planos pdf', unsafe_allow_html=True)
-
-        # Datasheets se cogen según los datos
-
-
-    
 
 
 
@@ -803,3 +751,6 @@ try:
 
 except Exception as e:
     st.write(e)   
+
+    
+'''

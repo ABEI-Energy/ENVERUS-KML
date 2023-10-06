@@ -158,3 +158,37 @@ trials.py
 auxDoc.py
 auxDoc.py/
 auxDoc.py
+
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# History
+.history
+history/
+.history/
+
+# jumble
+.jumble.py
+jumble.py
+jumble.py/
+.jumble.py/
+
+# nosync
+.nosync.py
+nosync.py
+nosync.py/
+.nosync.py/
+
+# nosync
+*.trials
+trials.py
+*trials.py
+*trials.py/
+*.trials.py/
