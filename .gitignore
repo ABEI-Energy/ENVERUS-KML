@@ -192,3 +192,8 @@ trials.py
 *trials.py
 *trials.py/
 *.trials.py/
+
+# Files
+.files
+files/
+.files/
