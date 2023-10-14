@@ -60,7 +60,6 @@ if uploadedFile:
         df, flag_adequacy = mp.locator_json(df_stateless, df_statefull, df_stateless_countiless, df_full, rootShp)
 
         df.reset_index(inplace = True, drop = True)
-        st.dataframe(df)
 
         if flag_adequacy:
 
