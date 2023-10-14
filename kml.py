@@ -1,6 +1,5 @@
 import pandas as pd
 import simplekml as ks
-import os
 
 def kmlMaker(df):
     

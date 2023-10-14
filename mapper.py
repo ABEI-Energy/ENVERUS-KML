@@ -1,18 +1,7 @@
 import geopandas as gpd
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import os
-import json
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import plotly.express as px
-from pathlib import Path
 import streamlit as st
-import requests
-from geopy.geocoders import Nominatim
-import utm
 global zoneVal
 import geopandas as gpd
 
