@@ -22,9 +22,10 @@ def filter_df(df, selected_periods, selected_ISOs, selected_states, selected_pri
     df_indexed = df_indexed.sort_values(by=['Average Max Daily LMP', 'Average Min Daily LMP'],
      ascending=[True, False]).reset_index(drop = True)
     
-    df_indexed['Heat map scale 1'] = df_indexed.groupby('State').cumcount() + 1
-    df_indexed['Heat map scale'] = df_indexed.groupby('State')['Heat map scale 1'].apply(lambda x: (x - 1) / (len(x) - 1))
-    
+    df_indexed['Heat map scale'] = df_indexed.groupby('State').cumcount() + 1
+    # df_indexed['Heat map scale'] = df_indexed.groupby('State')['Heat map scale'].apply(lambda x: (x - 1) / (len(x) - 1))
+    df_indexed['Heat map scale'] = df_indexed.groupby('State')['Heat map scale'].transform(lambda x: (x - 1) / (len(x) - 1))
+
     
     df_indexed.loc[df_indexed['Heat map scale'].isnull(), 'Heat map scale'] = 1 
 
