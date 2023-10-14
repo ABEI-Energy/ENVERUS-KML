@@ -3,7 +3,6 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 global zoneVal
-import geopandas as gpd
 
 st.cache_data
 def locator_json(df_stateless, df_statefull, df_stateless_countiless, df_full, rootFileShp):
