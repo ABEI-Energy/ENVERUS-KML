@@ -11,6 +11,8 @@ import functions as fn
 import kml
 from zipfile import ZipFile
 
+if 'disable_opt' not in st.session_state:
+    st.session_state.disable_opt = False
 
 #Set the language for datetime
 lc.setlocale(lc.LC_ALL,'es_ES.UTF-8')
@@ -64,31 +66,46 @@ if uploadedFile:
         if flag_adequacy:
 
             col1, col2, col3, col4 = st.columns(4)
-            state = periods = ISO = priceType = str()
+            state = period = ISO = priceType = str()
 
             with col1:
-                state = st.multiselect('Select state:', sorted(df['State'].unique()))
+                select_all_state = st.checkbox('Select all states')
+                state_key = 'state_' + str(select_all_state)
+                if not select_all_state:
+                    state = st.multiselect('Select state:', sorted(df['State'].unique()), key = state_key)
+                else:
+                    state = df['State'].unique().tolist()
 
             with col2:
                 if state:
-                    ISO = st.multiselect('Select ISO:', df.loc[df['State'].isin(state), 'ISO'].unique())
+                    select_all_ISO = st.checkbox('Select all ISOs')
+                    iso_key = 'iso_' + str(select_all_ISO)
+                    if not select_all_ISO:
+                        ISO = st.multiselect('Select ISO:', df.loc[df['State'].isin(state), 'ISO'].unique(), key = iso_key)
+                    else:
+                        ISO = df.loc[df['State'].isin(state), 'ISO'].unique().tolist()
 
             with col3:
                 if state:
-                    periods = st.multiselect('Select period:', df.loc[df['State'].isin(state), 'Period From'].unique())
+                    select_all_period = st.checkbox('Select all periods')
+                    period_key = 'period_' + str(select_all_period)
+                    if not select_all_period:
+                        period = st.multiselect('Select period:', df.loc[df['State'].isin(state), 'Period From'].unique(), key = period_key)
+                    else:
+                        period = df.loc[df['State'].isin(state), 'Period From'].unique().tolist()
 
             with col4:
                 if state:
-                    priceType = st.multiselect('Select price type:', df.loc[df['State'].isin(state), 'Price type'].unique())
+                    select_all_priceType = st.checkbox('Select all price types')
+                    price_key = 'price_' + str(select_all_priceType)
+                    if not select_all_priceType:
+                        priceType = st.multiselect('Select price type:', df.loc[df['State'].isin(state), 'Price type'].unique(), key = price_key)
+                    else:
+                        priceType = df.loc[df['State'].isin(state), 'Price type'].unique().tolist()   
 
+        if (len(period)!=0) and (len(ISO)!=0) and (len(state)!=0) and (len(priceType)!=0):
 
-        #@todo que cree el kml en base a las etiquetas que se gestionen
-        #@todo mirar lo del html io write a ver si es eso lo que necesitamos
-        #@todo que permita descargarse, primero el kml y después el html. Igual meterlo todo en el zip a ver si podemos como overpass el bitsIO
-
-        if (len(periods)!=0) and (len(ISO)!=0) and (len(state)!=0) and (len(priceType)!=0):
-
-            filtered_df, df_indexed = fn.filter_df(df,periods,ISO, state, priceType)
+            filtered_df, df_indexed = fn.filter_df(df,period,ISO, state, priceType)
 
             html_to_show_spread = mp.html_display_spread(filtered_df)
             html_to_show_indexed = mp.html_display_indexed(df_indexed)
@@ -117,16 +134,24 @@ if uploadedFile:
             flag_createFile = st.button("Generate zip file")
             flagZip = False
 
-
-            # st.write(filtered_df)
-
             if flag_createFile:
-                nameZip = 'Enverus ' + str(state) + " " + str(ISO) + " " + str(periods) + " " + str(priceType) + " " + ".zip"
+                nameZip = 'Enverus ' + str(state) + " " + str(ISO) + " " + str(period) + " " + str(priceType) + " " + ".zip"
                 zip_data = io.BytesIO()
 
+                # We create the kml file
                 flagKml, kml_string = kml.kmlMaker(filtered_df)
                 obj_kml_io = io.StringIO(kml_string)
                 obj_kml_io.seek(0)
+
+                # We create the xlsx
+                excel_io = io.BytesIO()
+                writer = pd.ExcelWriter(excel_io, engine = 'xlsxwriter')
+                excel_io.seek(0)
+                filtered_df.to_excel(writer, sheet_name = 'Nodes', index = False)
+                writer.save()
+                excel_io.seek(0)
+
+                pass
 
                 # Create a ZipFile Object
                 with ZipFile(zip_data, 'w') as zipf:
@@ -134,11 +159,12 @@ if uploadedFile:
                     zipf.writestr("Heatmap spread value.html",obj_html_io_spread.getvalue())
                     zipf.writestr("Heatmap indexed.html",obj_html_io_indexed.getvalue())
                     zipf.writestr("Node spread.kml",obj_kml_io.getvalue())
+                    zipf.writestr("Node spread.xlsx",excel_io.getvalue())
 
                     flagZip = True
             
             if flagZip and flagKml:
-                st.info('Download the report file')
+                st.success('Download the report file')
                 btn = st.download_button(
                     label="Download",
                     data=zip_data.getvalue(),
