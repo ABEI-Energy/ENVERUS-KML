@@ -135,33 +135,51 @@ if uploadedFile:
             flagZip = False
 
             if flag_createFile:
-                nameZip = 'Enverus ' + str(state) + " " + str(ISO) + " " + str(period) + " " + str(priceType) + " " + ".zip"
-                zip_data = io.BytesIO()
 
-                # We create the kml file
-                flagKml, kml_string = kml.kmlMaker(filtered_df)
-                obj_kml_io = io.StringIO(kml_string)
-                obj_kml_io.seek(0)
+                with st.status("Generating file", expanded=True) as status:
+                    st.write("Preparing kml")
 
-                # We create the xlsx
-                excel_io = io.BytesIO()
-                writer = pd.ExcelWriter(excel_io, engine = 'xlsxwriter')
-                excel_io.seek(0)
-                filtered_df.to_excel(writer, sheet_name = 'Nodes', index = False)
-                writer.close()
-                excel_io.seek(0)
+                    nameZip = 'Enverus ' + str(state) + " " + str(ISO) + " " + str(period) + " " + str(priceType) + " " + ".zip"
+                    zip_data = io.BytesIO()
 
-                pass
+                    # We create the kml file
+                    flagKml, kml_string = kml.kmlMaker(filtered_df)
+                    obj_kml_io = io.StringIO(kml_string)
+                    obj_kml_io.seek(0)      
 
-                # Create a ZipFile Object
-                with ZipFile(zip_data, 'w') as zipf:
-                   # Adding files that need to be zipped
-                    zipf.writestr("Heatmap spread value.html",obj_html_io_spread.getvalue())
-                    zipf.writestr("Heatmap indexed.html",obj_html_io_indexed.getvalue())
-                    zipf.writestr("Node spread.kml",obj_kml_io.getvalue())
-                    zipf.writestr("Node spread.xlsx",excel_io.getvalue())
 
-                    flagZip = True
+                    st.write("Preparing xlsx")
+
+                    # We create the xlsx
+                    excel_io = io.BytesIO()
+                    writer = pd.ExcelWriter(excel_io, engine = 'xlsxwriter')
+                    excel_io.seek(0)
+                    filtered_df.to_excel(writer, sheet_name = 'Nodes', index = False)
+                    writer.close()
+                    excel_io.seek(0)
+
+
+                    st.write("Preparing zip")
+
+                    # Create a ZipFile Object
+                    with ZipFile(zip_data, 'w') as zipf:
+                       # Adding files that need to be zipped
+                        zipf.writestr("Heatmap spread value.html",obj_html_io_spread.getvalue())
+                        zipf.writestr("Heatmap indexed.html",obj_html_io_indexed.getvalue())
+                        zipf.writestr("Node spread.kml",obj_kml_io.getvalue())
+                        zipf.writestr("Node spread.xlsx",excel_io.getvalue())
+
+                        flagZip = True
+
+
+                    status.update(label="File completed")
+
+                    
+
+
+
+
+
             
             if flagZip and flagKml:
                 st.success('Download the report file')
