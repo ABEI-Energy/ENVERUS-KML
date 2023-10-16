@@ -43,14 +43,14 @@ def kmlMaker(df):
 
                 point.description = description
                 point.style.iconstyle.scale = 1
-                point.style.labelstyle.scale = 0.1  # Adjust this value as needed
+                point.style.labelstyle.scale = 1  # Adjust this value as needed
 
             except Exception as e:
                 point.style.iconstyle.icon.href = 'http://maps.google.com/mapfiles/kml/pushpin/wht-pushpin.png'
                 point.style.iconstyle.color = ks.Color.black
                 point.description = description
                 point.style.iconstyle.scale = 1
-                point.style.labelstyle.scale = 0.1 # Adjust this value as needed
+                point.style.labelstyle.scale = 1 # Adjust this value as needed
 
     kml_file = kml.kml(format = True)
 

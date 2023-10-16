@@ -148,7 +148,7 @@ if uploadedFile:
                 writer = pd.ExcelWriter(excel_io, engine = 'xlsxwriter')
                 excel_io.seek(0)
                 filtered_df.to_excel(writer, sheet_name = 'Nodes', index = False)
-                writer.save()
+                writer.close()
                 excel_io.seek(0)
 
                 pass

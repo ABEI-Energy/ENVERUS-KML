@@ -82,30 +82,7 @@ def html_display_indexed(df):
     return html_show
 
 #@todo - Que haga zoom sobre la parte del mapa que nos interesa.
-'''
-def zoom(df):
 
-    # Find the minimum and maximum latitude and longitude
-    min_lat = df['Latitude'].min()
-    max_lat = df['Latitude'].max()
-    min_lon = df['Longitude'].min()
-    max_lon = df['Longitude'].max()
-
-    # Define the four corners of the square
-    corners = [(min_lat, min_lon),  # Minimum latitude, minimum longitude
-           (max_lat, max_lon),  # Maximum latitude, maximum longitude
-           (min_lat, max_lon),  # Minimum latitude, maximum longitude
-           (max_lat, min_lon)]  # Maximum latitude, minimum longitude
- 
-           
-    # https://stackoverflow.com/questions/63787612/plotly-automatic-zooming-for-mapbox-maps
-    zooming = 11.5 - np.log(max(abs(),abs())*111)
-
-    return zooming
-
-
-
-'''
 
 st.cache_data
 def kml_maker(df):
